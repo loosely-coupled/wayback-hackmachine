@@ -80,7 +80,7 @@ class FWN1RequestHandler(BaseHTTPRequestHandler):
     * GET /clientauth
     * GET /getloot
 [+] Mutual authentication status: enabled
-[+] Use FWN1 protocol for authentication i.e sha256(<iv> + <pre-shared key>)
+[+] Use FWN1 protocol for authentication. i.e {"iv": iv, "hash" :sha256(<iv> + <pre-shared key>)}
 [+] Contact administrator for pre-shared key
 """
         if self.path == "/":
