@@ -12,6 +12,7 @@ from http.cookies import SimpleCookie
 from urllib import parse
 from random import randint
 import hashlib
+import json
 
 PORT = 8000
 
@@ -54,14 +55,18 @@ class FWN1RequestHandler(BaseHTTPRequestHandler):
         print(FWN1RequestHandler.SECRET)
         
         if self.path.startswith("/serverauth"):
+            res_json = {}
             iv, fhash = self.server_auth()
-            response = "iv:%s\r\nhash:%s" % (iv, fhash)
+            res_json['iv'] = iv
+            res_json['hash'] = fhash
+            response = "{'iv':%s\r\nhash:%s" % (iv, fhash)
             
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(response.encode('utf-8')) 
+            self.wfile.write(json.dumps(res_json).encode('utf-8')) 
         
         elif self.path.startswith("/clientauth"):
+
             return self.client_auth()
         
         elif self.path.startswith("/gettoken"):
