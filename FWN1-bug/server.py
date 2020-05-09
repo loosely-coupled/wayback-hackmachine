@@ -66,6 +66,28 @@ class FWN1RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         print(FWN1RequestHandler.SECRET)
         
+        proto_banner = """
+  ______ _                        _ _       __ 
+ |  ____(_)                      | | |     /_ |
+ | |__   _ _ __ _____      ____ _| | |______| |
+ |  __| | | '__/ _ \ \ /\ / / _` | | |______| |
+ | |    | | | |  __/\ V  V | (_| | | |      | |
+ |_|    |_|_|  \___| \_/\_/ \__,_|_|_|      |_|
+                                            
+[+] Welcome to the Firewall-1 admin panel
+[+] available endpoints:
+    * POST /serverauth
+    * GET /clientauth
+    * GET /getloot
+[+] Mutual authentication status: enabled
+[+] Use FWN1 protocol for authentication i.e sha256(<iv> + <pre-shared key>)
+[+] Contact administrator for pre-shared key
+"""
+        if self.path == "/":
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(proto_banner.encode("utf-8"))
+
         if self.path.startswith("/serverauth"):
             res_json = {}
             iv, fhash = self.server_auth()
@@ -77,7 +99,7 @@ class FWN1RequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(res_json).encode('utf-8')) 
 
-        elif self.path.startswith("/gettoken"):
+        elif self.path.startswith("/getloot"):
             cookies = SimpleCookie(self.headers.get('Cookie'))
             
             user_session = ""
