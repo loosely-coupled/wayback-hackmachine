@@ -52,7 +52,7 @@ class FWN1RequestHandler(BaseHTTPRequestHandler):
         sessions.append[sessionid]
 
 
-    def check_session(self, sessionid):
+    def valid_session(self, sessionid):
         if sessionid in FWN1RequestHandler.sessions:
             return True
         
@@ -80,6 +80,7 @@ class FWN1RequestHandler(BaseHTTPRequestHandler):
         elif self.path.startswith("/gettoken"):
             cookies = SimpleCookie(self.headers.get('Cookie'))
             
+            user_session = ""
             try:
                 user_session = cookies["fwn1protocol"].value
             except:
@@ -88,11 +89,17 @@ class FWN1RequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write("'fwn1protocol' cookie not found. Please authenticate\n".encode('utf-8'))
                 return
 
-            if self.check_session(cookies["fwn1protocol"].value) == False:
+            if self.valid_session(cookies["fwn1protocol"].value) == False:
                 self.send_response(404)
                 self.end_headers  
                 self.wfile.write("invalid session. Please re-authenticate".encode('utf-8'))
-                
+                return
+
+            if self.valid_session(user_session):
+                self.send_response(200)
+                self.end_headers
+                self.wfile.write(self.get_secret_text().encode("utf-8"))
+        
         else:
             self.send_response(404)
             self.end_headers      
