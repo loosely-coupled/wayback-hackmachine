@@ -13,6 +13,7 @@ from urllib import parse
 from random import randint
 import hashlib
 import json
+import uuid
 
 PORT = 8000
 
@@ -21,21 +22,31 @@ class FWN1RequestHandler(BaseHTTPRequestHandler):
     SECRET = str(randint(1000000000,9999999999))
     sessions = []
 
-    def client_auth(self):
-         # Generate random value
+    def client_auth(self, auth_request):
+         
+        auth_json = json.loads(auth_request)
+        
+        user_hash = ""
+        iv = ""
+        try:
+            iv = auth_json["iv"]
+            user_hash = auth_json["hash"]
+        except:
+            return "failed to read 'iv' and 'hash' value"
 
-        # read secret
-
-        # hash secret with random value
-
-        pass
-
+        server_key = iv + FWN1RequestHandler.SECRET
+        server_hash = hashlib.sha256(server_key.encode('utf-8')).hexdigest()
+        
+        if server_hash == user_hash:
+            return "success"
+        else:
+            return "failed"
 
     def server_auth(self):
 
         r1 = randint(1000000000,9999999999) 
         key = str(r1) + FWN1RequestHandler.SECRET       
-        return (r1, hashlib.sha256(key.encode('utf-8')).hexdigest())
+        return (str(r1), hashlib.sha256(key.encode('utf-8')).hexdigest())
 
     def store_session(self, sessionid):
         sessions.append[sessionid]
@@ -50,7 +61,8 @@ class FWN1RequestHandler(BaseHTTPRequestHandler):
 
     def get_secret_text(self):
         return "A painful lesson in buiding authentication from scratch!!"
-    
+
+        
     def do_GET(self):
         print(FWN1RequestHandler.SECRET)
         
@@ -64,11 +76,7 @@ class FWN1RequestHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
             self.wfile.write(json.dumps(res_json).encode('utf-8')) 
-        
-        elif self.path.startswith("/clientauth"):
 
-            return self.client_auth()
-        
         elif self.path.startswith("/gettoken"):
             cookies = SimpleCookie(self.headers.get('Cookie'))
             
@@ -89,6 +97,39 @@ class FWN1RequestHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers      
 
+
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length']) 
+        post_data = self.rfile.read(content_length) 
+        
+        if self.path.startswith("/clientauth"):
+            response = self.client_auth(post_data)
+            
+            if response == "success":
+                user_session = str(uuid.uuid4())
+                FWN1RequestHandler.sessions.append(user_session)
+
+                self.send_response(200)
+                cookie = http.cookies.SimpleCookie()
+                cookie['fwn1protocol'] = user_session
+                self.send_header("Set-Cookie", cookie.output(header='', sep=''))
+                self.end_headers()
+
+                self.wfile.write("successful authentication. Authorised to call /gettoken".encode('utf-8'))
+            
+            elif response == "failed":
+                self.send_response(401)
+                self.end_headers()
+
+                self.wfile.write("authentication failed. Please try again".encode("utf-8"))
+
+            else:
+
+                self.send_response(500)
+                self.end_headers()
+
+                body = "Bad request: %s" % response
+                self.wfile.write(body.encode('utf-8'))
 
 
 if __name__ == '__main__':
